@@ -1,14 +1,17 @@
 import { Request } from 'express';
 import { User } from 'generated/prisma';
 import {
-  Controller,
-  Get,
-  NotFoundException,
   Req,
+  Get,
+  Body,
+  Patch,
+  Controller,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { UsersService } from './users.service';
+import { MeDto } from '@users/dto/me.dto';
+import { UsersService } from '@users/users.service';
 
 @Controller('users')
 export class UsersController {
@@ -22,11 +25,30 @@ export class UsersController {
       throw new UnauthorizedException('Invalid user or token information');
     }
 
-    const me = await this.users.user({ id: user.sub });
-    if (!me) {
+    const existingUser = await this.users.user({ id: user.sub });
+    if (!existingUser) {
       throw new NotFoundException('User not found');
     }
 
-    return me;
+    return existingUser;
+  }
+
+  @Patch('me')
+  async updateMe(@Req() request: Request, @Body() data: MeDto): Promise<User> {
+    const user = request['user'] as JwtPayload;
+
+    if (!user || typeof user.sub !== 'string') {
+      throw new UnauthorizedException('Invalid user or token information');
+    }
+
+    const existingUser = await this.users.user({ id: user.sub });
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.users.updateUser({
+      where: { id: user.sub },
+      data,
+    });
   }
 }
