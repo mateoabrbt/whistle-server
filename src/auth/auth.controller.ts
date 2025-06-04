@@ -1,5 +1,4 @@
 import { Request } from 'express';
-import { JwtService } from '@nestjs/jwt';
 import {
   Req,
   Post,
@@ -19,7 +18,6 @@ import { Public } from '@auth/decorator/auth.public.decorator';
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly jwt: JwtService,
     private readonly guard: AuthGuard,
     private readonly auth: AuthService,
   ) {}
