@@ -13,7 +13,7 @@ import { AuthService } from '@auth/auth.service';
 import { SignupDto } from '@auth/dto/signup.dto';
 import { RefreshDto } from '@auth/dto/refresh.dto';
 import { AuthGuard } from '@auth/guard/auth.guard';
-import { Public } from '@auth/decorator/auth.public.decorator';
+import { Public } from '@auth/decorator/auth.decorator';
 
 @Controller('auth')
 export class AuthController {

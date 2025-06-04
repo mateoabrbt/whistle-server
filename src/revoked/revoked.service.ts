@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, RevokedToken } from 'generated/prisma';
 
 import { PrismaService } from '@prisma/prisma.service';
@@ -11,17 +11,10 @@ export class RevokedService {
 
   async revokedToken(
     revokedTokenWhereUniqueInput: Prisma.RevokedTokenWhereUniqueInput,
-  ): Promise<RevokedToken> {
-    const revokedToken = await this.prisma.revokedToken.findUnique({
+  ): Promise<RevokedToken | null> {
+    return this.prisma.revokedToken.findUnique({
       where: revokedTokenWhereUniqueInput,
     });
-    if (!revokedToken) {
-      throw new NotFoundException(
-        `Revoked token with ID ${revokedTokenWhereUniqueInput.id} does not exist`,
-      );
-    }
-
-    return revokedToken;
   }
 
   async createRevokedToken(

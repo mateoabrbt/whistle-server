@@ -155,7 +155,7 @@ export class AuthService {
 
     const user = await this.users.user({ id });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(`User with ID ${id} does not exist`);
     }
     if (!user.refreshToken || user.refreshToken !== refresh_token) {
       throw new UnauthorizedException('Invalid refresh token');

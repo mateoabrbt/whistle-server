@@ -11,7 +11,7 @@ import {
 
 import { RevokedService } from '@revoked/revoked.service';
 
-import { IS_PUBLIC } from '../decorator/auth.public.decorator';
+import { IS_PUBLIC } from '@auth/decorator/auth.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
