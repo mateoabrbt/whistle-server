@@ -6,7 +6,6 @@ import {
   Body,
   Patch,
   Controller,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -25,12 +24,7 @@ export class UsersController {
       throw new UnauthorizedException('Invalid user or token information');
     }
 
-    const existingUser = await this.users.user({ id: user.sub });
-    if (!existingUser) {
-      throw new NotFoundException('User not found');
-    }
-
-    return existingUser;
+    return this.users.user({ id: user.sub });
   }
 
   @Patch('me')
@@ -39,11 +33,6 @@ export class UsersController {
 
     if (!user || typeof user.sub !== 'string') {
       throw new UnauthorizedException('Invalid user or token information');
-    }
-
-    const existingUser = await this.users.user({ id: user.sub });
-    if (!existingUser) {
-      throw new NotFoundException('User not found');
     }
 
     return this.users.updateUser({
