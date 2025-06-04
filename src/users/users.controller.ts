@@ -7,6 +7,7 @@ import {
   Patch,
   Controller,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 
 import { MeDto } from '@users/dto/me.dto';
@@ -24,7 +25,12 @@ export class UsersController {
       throw new UnauthorizedException('Invalid user or token information');
     }
 
-    return this.users.user({ id: user.sub });
+    const existingUser = await this.users.user({ id: user.sub });
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID ${user.sub} not found`);
+    }
+
+    return existingUser;
   }
 
   @Patch('me')
