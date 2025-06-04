@@ -45,24 +45,7 @@ export class AuthController {
   refresh(
     @Body() body: RefreshDto,
   ): Promise<{ access_token: string; refresh_token: string }> {
-    const { refresh_token } = body;
-
-    try {
-      const id = this.jwt.decode<{ sub: string }>(refresh_token)?.sub;
-
-      if (!id || typeof id !== 'string') {
-        throw new UnauthorizedException(
-          'Invalid user or refresh token information',
-        );
-      }
-
-      return this.auth.refresh({
-        id,
-        refresh_token,
-      });
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    return this.auth.refresh(body);
   }
 
   @Post('logout')

@@ -136,10 +136,22 @@ export class AuthService {
   }
 
   async refresh(data: {
-    id: string;
     refresh_token: string;
   }): Promise<{ access_token: string; refresh_token: string }> {
-    const { id, refresh_token } = data;
+    const { refresh_token } = data;
+
+    let id: string;
+    try {
+      id = this.jwt.decode<{ sub: string }>(refresh_token)?.sub;
+
+      if (!id || typeof id !== 'string') {
+        throw new UnauthorizedException(
+          'Invalid user or refresh token information',
+        );
+      }
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
     const user = await this.users.user({ id });
     if (!user) {
