@@ -12,8 +12,8 @@ import { LoginDto } from '@auth/dto/login.dto';
 import { AuthService } from '@auth/auth.service';
 import { SignupDto } from '@auth/dto/signup.dto';
 import { RefreshDto } from '@auth/dto/refresh.dto';
-import { AuthGuard } from '@auth/guard/auth.guard';
-import { Public } from '@auth/decorator/auth.decorator';
+import { AuthGuard } from '@auth/auth.guard';
+import { Public } from '@auth/auth.decorator';
 
 @Controller('auth')
 export class AuthController {
