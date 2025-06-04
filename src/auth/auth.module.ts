@@ -5,8 +5,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { UsersModule } from '@users/users.module';
 import { RevokedModule } from '@revoked/revoked.module';
 
-import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './guard/auth.guard';
 import { AuthController } from './auth.controller';
 
 @Module({

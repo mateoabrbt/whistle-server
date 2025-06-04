@@ -9,12 +9,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { AuthGuard } from '@auth/auth.guard';
 import { LoginDto } from '@auth/dto/login.dto';
 import { AuthService } from '@auth/auth.service';
 import { SignupDto } from '@auth/dto/signup.dto';
 import { RefreshDto } from '@auth/dto/refresh.dto';
-import { Public } from '@auth/auth.public.decorator';
+import { AuthGuard } from '@auth/guard/auth.guard';
+import { Public } from '@auth/decorator/auth.public.decorator';
 
 @Controller('auth')
 export class AuthController {
