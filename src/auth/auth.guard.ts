@@ -2,23 +2,21 @@ import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import {
-  Inject,
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { RevokedService } from '@revoked/revoked.service';
-
 import { IS_PUBLIC } from '@auth/auth.decorator';
+import { RevokedService } from '@revoked/revoked.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private jwt: JwtService,
-    private reflector: Reflector,
-    @Inject(RevokedService) private revoked: RevokedService,
+    private readonly jwt: JwtService,
+    private readonly reflector: Reflector,
+    private readonly revoked: RevokedService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -56,7 +54,7 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  public extractTokenFromHeader(request: Request): string | undefined {
+  extractTokenFromHeader(request: Request): string | undefined {
     const auth = request.headers.authorization;
 
     if (!auth) return undefined;
