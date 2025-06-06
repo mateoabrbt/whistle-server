@@ -1,4 +1,6 @@
 import * as argon2 from 'argon2';
+import type { Request } from 'express';
+import type { Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from 'generated/prisma';
 import {
@@ -10,6 +12,7 @@ import {
 
 import { UsersService } from '@users/users.service';
 import { RevokedService } from '@revoked/revoked.service';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class AuthService {
@@ -217,5 +220,25 @@ export class AuthService {
       token,
       expiresAt,
     });
+  }
+
+  getCurrentUser(request: Request): JwtPayload {
+    const user = request['user'] as JwtPayload;
+
+    if (!user || typeof user.sub !== 'string') {
+      throw new UnauthorizedException('Invalid user or token information');
+    }
+
+    return user;
+  }
+
+  getCurrentSocketUser(client: Socket): JwtPayload {
+    const user = client.data as JwtPayload;
+
+    if (!user || typeof user.sub !== 'string') {
+      throw new WsException('Invalid user or token information');
+    }
+
+    return user;
   }
 }

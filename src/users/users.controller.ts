@@ -6,28 +6,27 @@ import {
   Body,
   Patch,
   Controller,
-  UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
 
 import { MeDto } from '@users/dto/me.dto';
+import { AuthService } from '@auth/auth.service';
 import { UsersService } from '@users/users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly users: UsersService,
+  ) {}
 
   @Get('me')
   async me(@Req() request: Request): Promise<User> {
-    const user = request['user'] as JwtPayload;
+    const { sub } = this.auth.getCurrentUser(request);
 
-    if (!user || typeof user.sub !== 'string') {
-      throw new UnauthorizedException('Invalid user or token information');
-    }
-
-    const existingUser = await this.users.user({ id: user.sub });
+    const existingUser = await this.users.user({ id: sub });
     if (!existingUser) {
-      throw new NotFoundException(`User with ID ${user.sub} not found`);
+      throw new NotFoundException(`User with ID ${sub} not found`);
     }
 
     return existingUser;
@@ -35,14 +34,10 @@ export class UsersController {
 
   @Patch('me')
   async updateMe(@Req() request: Request, @Body() data: MeDto): Promise<User> {
-    const user = request['user'] as JwtPayload;
-
-    if (!user || typeof user.sub !== 'string') {
-      throw new UnauthorizedException('Invalid user or token information');
-    }
+    const { sub } = this.auth.getCurrentUser(request);
 
     return this.users.updateUser({
-      where: { id: user.sub },
+      where: { id: sub },
       data,
     });
   }

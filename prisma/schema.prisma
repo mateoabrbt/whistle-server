@@ -20,16 +20,18 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
   password     String
   firstName    String?
   lastName     String?
   refreshToken String?
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messagesSent Message[] @relation("UserSentMessages")
+  rooms        Room[]    @relation("RoomUsers")
 }
 
 model RevokedToken {
@@ -37,4 +39,29 @@ model RevokedToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model Room {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  users       User[]    @relation("RoomUsers")
+  messages    Message[] @relation("RoomMessages")
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  content    String
+  senderId   String
+  createdAt  DateTime  @default(now())
+  receivedAt DateTime?
+  readAt     DateTime?
+  sender     User      @relation("UserSentMessages", fields: [senderId], references: [id])
+  roomId     String
+  room       Room      @relation("RoomMessages", fields: [roomId], references: [id])
+
+  @@index([senderId])
+  @@index([roomId])
 }

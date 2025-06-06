@@ -18,10 +18,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@room/*": ["src/room/*"],
       "@auth/*": ["src/auth/*"],
       "@users/*": ["src/users/*"],
       "@prisma/*": ["src/prisma/*"],
-      "@revoked/*": ["src/revoked/*"]
+      "@revoked/*": ["src/revoked/*"],
+      "@message/*": ["src/message/*"]
     }
   }
 }
