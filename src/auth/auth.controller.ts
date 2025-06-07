@@ -32,6 +32,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @HttpCode(200)
   login(
     @Body() body: LoginDto,
   ): Promise<{ access_token: string; refresh_token: string }> {
