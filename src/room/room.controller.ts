@@ -80,6 +80,11 @@ export class RoomController {
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
+          include: {
+            sender: {
+              select: { id: true, username: true, email: true },
+            },
+          },
         },
       },
     });
@@ -103,6 +108,11 @@ export class RoomController {
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
+          include: {
+            sender: {
+              select: { id: true, username: true, email: true },
+            },
+          },
         },
       },
     });

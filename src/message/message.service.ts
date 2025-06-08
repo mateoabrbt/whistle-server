@@ -34,9 +34,15 @@ export class MessageService {
     });
   }
 
-  async createMessage(data: Prisma.MessageCreateInput): Promise<Message> {
+  async createMessage(params: {
+    include?: Prisma.MessageInclude;
+    data: Prisma.MessageCreateInput;
+  }): Promise<Message> {
+    const { data, include } = params;
+
     return this.prisma.message.create({
       data,
+      include,
     });
   }
 

@@ -184,9 +184,16 @@ export class RoomGateway {
       });
 
       const message = await this.message.createMessage({
-        content,
-        room: { connect: { id } },
-        sender: { connect: { id: sub } },
+        data: {
+          content,
+          room: { connect: { id } },
+          sender: { connect: { id: sub } },
+        },
+        include: {
+          sender: {
+            select: { id: true, username: true, email: true },
+          },
+        },
       });
 
       this.server.to(id).emit('newMessage', message);
