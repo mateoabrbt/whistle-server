@@ -24,7 +24,7 @@ export class AuthService {
 
   async register(
     data: Prisma.UserCreateInput,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const { email, password, username } = data;
 
     const pepper = process.env.PEPPER_SECRET_KEY;
@@ -49,14 +49,14 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const access_token = await this.jwt.signAsync({
+    const accessToken = await this.jwt.signAsync({
       sub: user.id,
       role: user.role,
       email: user.email,
       username: user.username,
     });
 
-    const refresh_token = await this.jwt.signAsync(
+    const refreshToken = await this.jwt.signAsync(
       {
         sub: user.id,
       },
@@ -68,19 +68,19 @@ export class AuthService {
 
     await this.users.updateUser({
       where: { id: user.id },
-      data: { refreshToken: refresh_token },
+      data: { refreshToken: refreshToken },
     });
 
     return {
-      access_token,
-      refresh_token,
+      accessToken,
+      refreshToken,
     };
   }
 
   async login(data: {
     email: string;
     password: string;
-  }): Promise<{ access_token: string; refresh_token: string }> {
+  }): Promise<{ accessToken: string; refreshToken: string }> {
     const { email, password } = data;
 
     const user = await this.users.user({ email });
@@ -110,14 +110,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const access_token = await this.jwt.signAsync({
+    const accessToken = await this.jwt.signAsync({
       sub: user.id,
       role: user.role,
       email: user.email,
       username: user.username,
     });
 
-    const refresh_token = await this.jwt.signAsync(
+    const refreshToken = await this.jwt.signAsync(
       {
         sub: user.id,
       },
@@ -129,23 +129,23 @@ export class AuthService {
 
     await this.users.updateUser({
       where: { id: user.id },
-      data: { refreshToken: refresh_token },
+      data: { refreshToken: refreshToken },
     });
 
     return {
-      access_token,
-      refresh_token,
+      accessToken,
+      refreshToken,
     };
   }
 
   async refresh(data: {
-    refresh_token: string;
-  }): Promise<{ access_token: string; refresh_token: string }> {
-    const { refresh_token } = data;
+    refreshToken: string;
+  }): Promise<{ accessToken: string; refreshToken: string }> {
+    const { refreshToken } = data;
 
     let id: string;
     try {
-      id = this.jwt.decode<{ sub: string }>(refresh_token)?.sub;
+      id = this.jwt.decode<{ sub: string }>(refreshToken)?.sub;
 
       if (!id || typeof id !== 'string') {
         throw new UnauthorizedException(
@@ -160,12 +160,12 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} does not exist`);
     }
-    if (!user.refreshToken || user.refreshToken !== refresh_token) {
+    if (!user.refreshToken || user.refreshToken !== refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     try {
-      await this.jwt.verifyAsync<JwtPayload>(refresh_token, {
+      await this.jwt.verifyAsync<JwtPayload>(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET_KEY,
       });
     } catch {
@@ -176,14 +176,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const access_token = await this.jwt.signAsync({
+    const accessToken = await this.jwt.signAsync({
       sub: user.id,
       role: user.role,
       email: user.email,
       username: user.username,
     });
 
-    const new_refresh_token = await this.jwt.signAsync(
+    const new_refreshToken = await this.jwt.signAsync(
       {
         sub: user.id,
       },
@@ -195,12 +195,12 @@ export class AuthService {
 
     await this.users.updateUser({
       where: { id: user.id },
-      data: { refreshToken: new_refresh_token },
+      data: { refreshToken: new_refreshToken },
     });
 
     return {
-      access_token,
-      refresh_token: new_refresh_token,
+      accessToken,
+      refreshToken: new_refreshToken,
     };
   }
 

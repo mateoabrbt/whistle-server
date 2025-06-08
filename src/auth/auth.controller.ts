@@ -26,7 +26,7 @@ export class AuthController {
   @Post('register')
   register(
     @Body() body: SignupDto,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     return this.auth.register(body);
   }
 
@@ -35,15 +35,16 @@ export class AuthController {
   @HttpCode(200)
   login(
     @Body() body: LoginDto,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     return this.auth.login(body);
   }
 
   @Public()
   @Post('refresh')
+  @HttpCode(200)
   refresh(
     @Body() body: RefreshDto,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     return this.auth.refresh(body);
   }
 
