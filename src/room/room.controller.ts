@@ -72,6 +72,16 @@ export class RoomController {
         users: { some: { id: sub } },
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        users: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, username: true, email: true },
+        },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
   }
 
@@ -81,8 +91,20 @@ export class RoomController {
     const { sub } = this.auth.getCurrentUser(request);
 
     return this.room.checkMembership({
-      id,
-      users: { some: { id: sub } },
+      roomWhereUniqueInput: {
+        id,
+        users: { some: { id: sub } },
+      },
+      include: {
+        users: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, username: true, email: true },
+        },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
   }
 
@@ -96,7 +118,9 @@ export class RoomController {
     const { page, limit } = query;
     const { sub } = this.auth.getCurrentUser(request);
 
-    await this.room.checkMembership({ id, users: { some: { id: sub } } });
+    await this.room.checkMembership({
+      roomWhereUniqueInput: { id, users: { some: { id: sub } } },
+    });
 
     const take = limit ? Number(limit) : 20;
     const skip = page && limit ? (Number(page) - 1) * Number(limit) : 0;

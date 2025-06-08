@@ -89,8 +89,10 @@ export class RoomGateway {
       const { sub } = this.auth.getCurrentSocketUser(client);
 
       const isUserAlreadyInRoom = await this.room.room({
-        id,
-        users: { some: { id: sub } },
+        roomWhereUniqueInput: {
+          id,
+          users: { some: { id: sub } },
+        },
       });
 
       if (isUserAlreadyInRoom) throw new WsException('Already in room');
@@ -130,13 +132,13 @@ export class RoomGateway {
       const { id } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
-      await this.room.checkMembership(
-        {
+      await this.room.checkMembership({
+        exceptionType: 'WsException',
+        roomWhereUniqueInput: {
           id,
           users: { some: { id: sub } },
         },
-        'WsException',
-      );
+      });
 
       const room = await this.room.updateRoom({
         where: { id },
@@ -173,13 +175,13 @@ export class RoomGateway {
       const { id, content } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
-      await this.room.checkMembership(
-        {
+      await this.room.checkMembership({
+        exceptionType: 'WsException',
+        roomWhereUniqueInput: {
           id,
           users: { some: { id: sub } },
         },
-        'WsException',
-      );
+      });
 
       const message = await this.message.createMessage({
         content,

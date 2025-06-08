@@ -9,22 +9,27 @@ import { WsException } from '@nestjs/websockets';
 export class RoomService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async room(
-    roomWhereUniqueInput: Prisma.RoomWhereUniqueInput,
-  ): Promise<Room | null> {
+  async room(params: {
+    roomWhereUniqueInput: Prisma.RoomWhereUniqueInput;
+    include?: Prisma.RoomInclude;
+  }): Promise<Room | null> {
+    const { include, roomWhereUniqueInput } = params;
+
     return this.prisma.room.findUnique({
       where: roomWhereUniqueInput,
+      include,
     });
   }
 
   async rooms(params: {
     skip?: number;
     take?: number;
+    include?: Prisma.RoomInclude;
     where?: Prisma.RoomWhereInput;
     cursor?: Prisma.RoomWhereUniqueInput;
     orderBy?: Prisma.RoomOrderByWithRelationInput;
   }): Promise<Room[]> {
-    const { skip, take, cursor, where, orderBy } = params;
+    const { skip, take, cursor, where, orderBy, include } = params;
 
     return this.prisma.room.findMany({
       skip,
@@ -32,6 +37,7 @@ export class RoomService {
       cursor,
       where,
       orderBy,
+      include,
     });
   }
 
@@ -59,11 +65,18 @@ export class RoomService {
     });
   }
 
-  async checkMembership(
-    roomWhereUniqueInput: Prisma.RoomWhereUniqueInput,
-    exceptionType: 'NotFoundException' | 'WsException' = 'NotFoundException',
-  ): Promise<Room> {
-    const room = await this.room(roomWhereUniqueInput);
+  async checkMembership(params: {
+    include?: Prisma.RoomInclude;
+    roomWhereUniqueInput: Prisma.RoomWhereUniqueInput;
+    exceptionType?: 'NotFoundException' | 'WsException';
+  }): Promise<Room> {
+    const {
+      include,
+      roomWhereUniqueInput,
+      exceptionType = 'NotFoundException',
+    } = params;
+
+    const room = await this.room({ include, roomWhereUniqueInput });
 
     if (!room) {
       const exceptionMessage =
