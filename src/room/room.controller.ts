@@ -37,7 +37,7 @@ export class RoomController {
     const { sub } = this.auth.getCurrentUser(request);
 
     const members = Array.from(
-      new Set([sub, ...(users ?? []).map((user) => user.id)]),
+      new Set([sub, ...(users ?? []).map((user) => user.userId)]),
     );
 
     const foundUsers = await this.users.users({
@@ -75,14 +75,14 @@ export class RoomController {
       include: {
         users: {
           orderBy: { createdAt: 'asc' },
-          select: { id: true, username: true, email: true },
+          select: { id: true, username: true },
         },
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
           include: {
             sender: {
-              select: { id: true, username: true, email: true },
+              select: { id: true, username: true },
             },
           },
         },
@@ -103,14 +103,14 @@ export class RoomController {
       include: {
         users: {
           orderBy: { createdAt: 'asc' },
-          select: { id: true, username: true, email: true },
+          select: { id: true, username: true },
         },
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
           include: {
             sender: {
-              select: { id: true, username: true, email: true },
+              select: { id: true, username: true },
             },
           },
         },
@@ -137,10 +137,17 @@ export class RoomController {
 
     return this.message.messages({
       where: { roomId: id },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         sender: {
-          select: { id: true, username: true, email: true },
+          select: { id: true, username: true },
+        },
+        status: {
+          include: {
+            user: {
+              select: { id: true, username: true },
+            },
+          },
         },
       },
       take,

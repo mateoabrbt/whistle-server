@@ -1,10 +1,11 @@
 import { Server, Socket } from 'socket.io';
-import { Message, Room } from 'generated/prisma';
-import { WebSocketServer, WsException } from '@nestjs/websockets';
+import { Message, MessageStatus, Room } from 'generated/prisma';
 import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   MessageBody,
+  WsException,
   ConnectedSocket,
+  WebSocketServer,
   WebSocketGateway,
   SubscribeMessage,
 } from '@nestjs/websockets';
@@ -16,7 +17,9 @@ import { JoinRoomDto } from './dto/body/join-room.dto';
 import { LeaveRoomDto } from './dto/body/leave-room.dto';
 import { MessageService } from '@message/message.service';
 import { SendMessageDto } from './dto/body/send-message.dto';
+import { StatusService } from '@message/status/status.service';
 import { ModifyMessageDto } from './dto/body/modify-message.dto';
+import { ReceiveMessageDto } from './dto/body/receive-message.dto';
 
 @WebSocketGateway({ namespace: 'room', cors: true })
 @UseGuards(WsAuthGuard)
@@ -34,6 +37,7 @@ export class RoomGateway {
   constructor(
     private readonly auth: AuthService,
     private readonly room: RoomService,
+    private readonly status: StatusService,
     private readonly message: MessageService,
   ) {}
   private readonly logger = new Logger(RoomGateway.name);
@@ -85,12 +89,12 @@ export class RoomGateway {
     @MessageBody() body: JoinRoomDto,
   ): Promise<Room> {
     try {
-      const { id } = body;
+      const { roomId } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
       const isUserAlreadyInRoom = await this.room.room({
         roomWhereUniqueInput: {
-          id,
+          id: roomId,
           users: { some: { id: sub } },
         },
       });
@@ -98,7 +102,7 @@ export class RoomGateway {
       if (isUserAlreadyInRoom) throw new WsException('Already in room');
 
       const room = await this.room.updateRoom({
-        where: { id },
+        where: { id: roomId },
         data: {
           users: {
             connect: [{ id: sub }],
@@ -106,8 +110,8 @@ export class RoomGateway {
         },
       });
 
-      void client.join(id);
-      this.server.to(id).emit('userJoinedRoom', { userId: sub, roomId: id });
+      void client.join(roomId);
+      this.server.to(roomId).emit('userJoinedRoom', { userId: sub, roomId });
 
       return room;
     } catch (error) {
@@ -129,19 +133,19 @@ export class RoomGateway {
     @MessageBody() body: LeaveRoomDto,
   ): Promise<Room> {
     try {
-      const { id } = body;
+      const { roomId } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
       await this.room.checkMembership({
         exceptionType: 'WsException',
         roomWhereUniqueInput: {
-          id,
+          id: roomId,
           users: { some: { id: sub } },
         },
       });
 
       const room = await this.room.updateRoom({
-        where: { id },
+        where: { id: roomId },
         data: {
           users: {
             disconnect: [{ id: sub }],
@@ -149,8 +153,8 @@ export class RoomGateway {
         },
       });
 
-      void client.leave(id);
-      this.server.to(id).emit('userLeftRoom', { userId: sub, roomId: id });
+      void client.leave(roomId);
+      this.server.to(roomId).emit('userLeftRoom', { userId: sub, roomId });
 
       return room;
     } catch (error) {
@@ -172,13 +176,13 @@ export class RoomGateway {
     @MessageBody() body: SendMessageDto,
   ): Promise<Message> {
     try {
-      const { id, content } = body;
+      const { roomId, content } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
       await this.room.checkMembership({
         exceptionType: 'WsException',
         roomWhereUniqueInput: {
-          id,
+          id: roomId,
           users: { some: { id: sub } },
         },
       });
@@ -186,17 +190,24 @@ export class RoomGateway {
       const message = await this.message.createMessage({
         data: {
           content,
-          room: { connect: { id } },
+          room: { connect: { id: roomId } },
           sender: { connect: { id: sub } },
         },
         include: {
           sender: {
-            select: { id: true, username: true, email: true },
+            select: { id: true, username: true },
+          },
+          status: {
+            include: {
+              user: {
+                select: { id: true, username: true },
+              },
+            },
           },
         },
       });
 
-      this.server.to(id).emit('newMessage', message);
+      this.server.to(roomId).emit('newMessage', message);
 
       return message;
     } catch (error) {
@@ -218,11 +229,11 @@ export class RoomGateway {
     @MessageBody() body: ModifyMessageDto,
   ): Promise<Message> {
     try {
-      const { id, content, roomId } = body;
+      const { roomId, content, messageId } = body;
       const { sub } = this.auth.getCurrentSocketUser(client);
 
       const message = await this.message.message({
-        id,
+        id: messageId,
         sender: { id: sub },
       });
 
@@ -231,7 +242,7 @@ export class RoomGateway {
       }
 
       const updatedMessage = await this.message.updateMessage({
-        where: { id },
+        where: { id: messageId },
         data: { content },
       });
 
@@ -249,6 +260,56 @@ export class RoomGateway {
         this.logger.error('Unknown error during modifyMessage', error);
         throw new WsException(
           'An unknown error occurred while modifying the message.',
+        );
+      }
+    }
+  }
+
+  @SubscribeMessage('receiveMessage')
+  async handleReceiveMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: ReceiveMessageDto,
+  ): Promise<MessageStatus> {
+    try {
+      const { roomId, messageId } = body;
+      const { sub } = this.auth.getCurrentSocketUser(client);
+
+      await this.room.checkMembership({
+        exceptionType: 'WsException',
+        roomWhereUniqueInput: {
+          id: roomId,
+          users: { some: { id: sub } },
+        },
+      });
+
+      const message = await this.message.message({
+        id: messageId,
+      });
+
+      if (!message) {
+        throw new WsException(`Message with ID ${messageId} not found.`);
+      }
+
+      const messageStatus = await this.status.createMessageStatus({
+        receivedAt: new Date(),
+        user: { connect: { id: sub } },
+        message: { connect: { id: messageId } },
+      });
+
+      this.server.to(roomId).emit('messageReceived', messageStatus);
+
+      return messageStatus;
+    } catch (error) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Receive message error: ${error.message}`,
+          error.stack,
+        );
+        throw new WsException(error.message);
+      } else {
+        this.logger.error('Unknown error during receiveMessage', error);
+        throw new WsException(
+          'An unknown error occurred while receiving the message.',
         );
       }
     }

@@ -5,20 +5,19 @@ import { AuthService } from '@auth/auth.service';
 import { RoomController } from './room.controller';
 import { UsersService } from '@users/users.service';
 import { PrismaService } from '@prisma/prisma.service';
-import { MessageService } from '@message/message.service';
 import { RevokedModule } from '@revoked/revoked.module';
+import { MessageModule } from '@message/message.module';
 
 @Module({
   exports: [RoomService],
-  imports: [RevokedModule],
   controllers: [RoomController],
+  imports: [RevokedModule, MessageModule],
   providers: [
     AuthService,
     RoomService,
     RoomGateway,
     UsersService,
     PrismaService,
-    MessageService,
   ],
 })
 export class RoomModule {}

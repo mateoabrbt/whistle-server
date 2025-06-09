@@ -20,18 +20,20 @@ enum Role {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  username     String    @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
   password     String
   firstName    String?
   lastName     String?
   refreshToken String?
-  role         Role      @default(USER)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  messagesSent Message[] @relation("UserSentMessages")
-  rooms        Room[]    @relation("RoomUsers")
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  rooms           Room[]          @relation("RoomUsers")
+  messages        Message[]       @relation("UserSentMessages")
+  messageStatuses MessageStatus[]
 }
 
 model RevokedToken {
@@ -42,26 +44,43 @@ model RevokedToken {
 }
 
 model Room {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  users       User[]    @relation("RoomUsers")
-  messages    Message[] @relation("RoomMessages")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users    User[]    @relation("RoomUsers")
+  messages Message[] @relation("RoomMessages")
 }
 
 model Message {
-  id         String    @id @default(cuid())
-  content    String
-  senderId   String
-  createdAt  DateTime  @default(now())
-  receivedAt DateTime?
-  readAt     DateTime?
-  sender     User      @relation("UserSentMessages", fields: [senderId], references: [id])
-  roomId     String
-  room       Room      @relation("RoomMessages", fields: [roomId], references: [id])
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  roomId    String
+  createdAt DateTime @default(now())
+
+  sender User            @relation("UserSentMessages", fields: [senderId], references: [id])
+  room   Room            @relation("RoomMessages", fields: [roomId], references: [id])
+  status MessageStatus[]
 
   @@index([senderId])
   @@index([roomId])
+}
+
+model MessageStatus {
+  id         String    @id @default(cuid())
+  userId     String
+  messageId  String
+  receivedAt DateTime?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  message Message @relation(fields: [messageId], references: [id])
+
+  @@unique([userId, messageId])
+  @@index([userId])
+  @@index([messageId])
 }
