@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class ModifyMessageDto {
   @IsString()
   @IsNotEmpty()
-  id: string;
+  messageId: string;
 
   @IsString()
   @IsNotEmpty()

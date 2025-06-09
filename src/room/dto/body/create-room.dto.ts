@@ -2,7 +2,7 @@ import { IsArray, IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 class ParticipantsDto {
   @IsString()
-  id: string;
+  userId: string;
 }
 
 export class CreateRoomDto {
