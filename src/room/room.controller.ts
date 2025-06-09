@@ -138,6 +138,11 @@ export class RoomController {
     return this.message.messages({
       where: { roomId: id },
       orderBy: { createdAt: 'asc' },
+      include: {
+        sender: {
+          select: { id: true, username: true, email: true },
+        },
+      },
       take,
       skip,
     });

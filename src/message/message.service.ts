@@ -19,11 +19,12 @@ export class MessageService {
   async messages(params: {
     skip?: number;
     take?: number;
+    include?: Prisma.MessageInclude;
     where?: Prisma.MessageWhereInput;
     cursor?: Prisma.MessageWhereUniqueInput;
     orderBy?: Prisma.MessageOrderByWithRelationInput;
   }): Promise<Message[]> {
-    const { skip, take, cursor, where, orderBy } = params;
+    const { skip, take, cursor, where, include, orderBy } = params;
 
     return this.prisma.message.findMany({
       skip,
@@ -31,6 +32,7 @@ export class MessageService {
       cursor,
       where,
       orderBy,
+      include,
     });
   }
 
