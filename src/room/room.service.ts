@@ -3,7 +3,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Room, Prisma } from 'generated/prisma';
 
 import { PrismaService } from '@prisma/prisma.service';
-import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class RoomService {
@@ -68,24 +67,15 @@ export class RoomService {
   async checkMembership(params: {
     include?: Prisma.RoomInclude;
     roomWhereUniqueInput: Prisma.RoomWhereUniqueInput;
-    exceptionType?: 'NotFoundException' | 'WsException';
   }): Promise<Room> {
-    const {
-      include,
-      roomWhereUniqueInput,
-      exceptionType = 'NotFoundException',
-    } = params;
+    const { include, roomWhereUniqueInput } = params;
 
     const room = await this.room({ include, roomWhereUniqueInput });
 
     if (!room) {
-      const exceptionMessage =
-        'This room does not exist or you are not a member';
-      if (exceptionType === 'WsException') {
-        throw new WsException(exceptionMessage);
-      } else {
-        throw new NotFoundException(exceptionMessage);
-      }
+      throw new NotFoundException(
+        'This room does not exist or you are not a member',
+      );
     }
 
     return room;

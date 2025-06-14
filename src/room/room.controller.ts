@@ -7,17 +7,23 @@ import {
   Post,
   Query,
   Param,
+  HttpCode,
   Controller,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { IdDto } from './dto/param/id.dto';
+import { RoomGateway } from './room.gateway';
 import { RoomService } from '@room/room.service';
 import { AuthService } from '@auth/auth.service';
 import { UsersService } from '@users/users.service';
+import { JoinRoomDto } from './dto/body/join.dto';
+import { LeaveRoomDto } from './dto/body/leave.dto';
 import { MessageService } from '@message/message.service';
 import { PaginationDto } from './dto/query/pagination.dto';
-import { CreateRoomDto } from '@room/dto/body/create-room.dto';
+import { CreateRoomDto } from '@room/dto/body/create.dto';
+import { StatusService } from '@message/status/status.service';
 
 @Controller('room')
 export class RoomController {
@@ -25,6 +31,8 @@ export class RoomController {
     private readonly auth: AuthService,
     private readonly room: RoomService,
     private readonly users: UsersService,
+    private readonly gateway: RoomGateway,
+    private readonly status: StatusService,
     private readonly message: MessageService,
   ) {}
 
@@ -33,7 +41,7 @@ export class RoomController {
     @Req() request: Request,
     @Body() body: CreateRoomDto,
   ): Promise<Room> {
-    const { name, description, users } = body;
+    const { name, users, description } = body;
     const { sub } = this.auth.getCurrentUser(request);
 
     const members = Array.from(
@@ -63,6 +71,73 @@ export class RoomController {
     });
   }
 
+  @Post('join')
+  @HttpCode(200)
+  async joinRoom(
+    @Req() request: Request,
+    @Body() body: JoinRoomDto,
+  ): Promise<Room> {
+    const { roomId } = body;
+    const { sub } = this.auth.getCurrentUser(request);
+
+    const isUserAlreadyInRoom = await this.room.room({
+      roomWhereUniqueInput: {
+        id: roomId,
+        users: { some: { id: sub } },
+      },
+    });
+
+    if (isUserAlreadyInRoom)
+      throw new BadRequestException('User already in room');
+
+    const room = await this.room.updateRoom({
+      where: { id: roomId },
+      data: {
+        users: {
+          connect: [{ id: sub }],
+        },
+      },
+    });
+
+    this.gateway.server
+      .to(roomId)
+      .emit('userJoinedRoom', { userId: sub, roomId });
+
+    return room;
+  }
+
+  @Post('leave')
+  @HttpCode(200)
+  async leaveRoom(
+    @Req() request: Request,
+    @Body() body: LeaveRoomDto,
+  ): Promise<Room> {
+    const { roomId } = body;
+    const { sub } = this.auth.getCurrentUser(request);
+
+    await this.room.checkMembership({
+      roomWhereUniqueInput: {
+        id: roomId,
+        users: { some: { id: sub } },
+      },
+    });
+
+    const room = await this.room.updateRoom({
+      where: { id: roomId },
+      data: {
+        users: {
+          disconnect: [{ id: sub }],
+        },
+      },
+    });
+
+    this.gateway.server
+      .to(roomId)
+      .emit('userLeftRoom', { userId: sub, roomId });
+
+    return room;
+  }
+
   @Get('all')
   async getAllRooms(@Req() request: Request): Promise<Room[]> {
     const { sub } = this.auth.getCurrentUser(request);
@@ -71,7 +146,7 @@ export class RoomController {
       where: {
         users: { some: { id: sub } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'asc' },
       include: {
         users: {
           orderBy: { createdAt: 'asc' },
@@ -88,6 +163,23 @@ export class RoomController {
         },
       },
     });
+  }
+
+  @Post('all/messages/delivered')
+  @HttpCode(200)
+  async markMessagesDelivered(
+    @Req() request: Request,
+  ): Promise<{ count: number; message: string }> {
+    const { sub } = this.auth.getCurrentUser(request);
+
+    const batchPayload = await this.status.markAllRoomsMessagesAsDelivered({
+      userId: sub,
+    });
+
+    return {
+      count: batchPayload.count,
+      message: `Marked ${batchPayload.count} messages as delivered.`,
+    };
   }
 
   @Get(':id')
@@ -153,5 +245,29 @@ export class RoomController {
       take,
       skip,
     });
+  }
+
+  @Post(':id/messages/read')
+  @HttpCode(200)
+  async markMessagesAsRead(
+    @Param() param: IdDto,
+    @Req() request: Request,
+  ): Promise<{ count: number; message: string }> {
+    const { id } = param;
+    const { sub } = this.auth.getCurrentUser(request);
+
+    await this.room.checkMembership({
+      roomWhereUniqueInput: { id, users: { some: { id: sub } } },
+    });
+
+    const batchPayload = await this.status.markRoomMessagesAsRead({
+      roomId: id,
+      userId: sub,
+    });
+
+    return {
+      count: batchPayload.count,
+      message: `Marked ${batchPayload.count} messages as read.`,
+    };
   }
 }

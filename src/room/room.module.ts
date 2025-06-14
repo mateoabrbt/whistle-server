@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { RoomGateway } from './room.gateway';
 import { AuthService } from '@auth/auth.service';
@@ -9,9 +9,9 @@ import { RevokedModule } from '@revoked/revoked.module';
 import { MessageModule } from '@message/message.module';
 
 @Module({
-  exports: [RoomService],
   controllers: [RoomController],
-  imports: [RevokedModule, MessageModule],
+  exports: [RoomService, RoomGateway],
+  imports: [RevokedModule, forwardRef(() => MessageModule)],
   providers: [
     AuthService,
     RoomService,

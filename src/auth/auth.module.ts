@@ -28,5 +28,6 @@ import { AuthController } from './auth.controller';
       useClass: AuthGuard,
     },
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

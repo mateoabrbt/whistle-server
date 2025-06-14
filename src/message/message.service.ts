@@ -8,17 +8,22 @@ import { PrismaService } from '@prisma/prisma.service';
 export class MessageService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async message(
-    messageWhereUniqueInput: Prisma.MessageWhereUniqueInput,
-  ): Promise<Message | null> {
+  async message(params: {
+    include?: Prisma.MessageInclude;
+    where: Prisma.MessageWhereUniqueInput;
+  }): Promise<Message | null> {
+    const { include, where } = params;
+
     return this.prisma.message.findUnique({
-      where: messageWhereUniqueInput,
+      where,
+      include,
     });
   }
 
   async messages(params: {
     skip?: number;
     take?: number;
+    select?: Prisma.MessageSelect;
     include?: Prisma.MessageInclude;
     where?: Prisma.MessageWhereInput;
     cursor?: Prisma.MessageWhereUniqueInput;
@@ -37,8 +42,8 @@ export class MessageService {
   }
 
   async createMessage(params: {
-    include?: Prisma.MessageInclude;
     data: Prisma.MessageCreateInput;
+    include?: Prisma.MessageInclude;
   }): Promise<Message> {
     const { data, include } = params;
 
@@ -60,9 +65,11 @@ export class MessageService {
     });
   }
 
-  async deleteMessage(where: Prisma.MessageWhereUniqueInput): Promise<Message> {
+  async deleteMessage(
+    messageWhereUniqueInput: Prisma.MessageWhereUniqueInput,
+  ): Promise<Message> {
     return this.prisma.message.delete({
-      where,
+      where: messageWhereUniqueInput,
     });
   }
 }

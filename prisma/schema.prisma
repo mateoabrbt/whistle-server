@@ -70,12 +70,12 @@ model Message {
 }
 
 model MessageStatus {
-  id         String    @id @default(cuid())
-  userId     String
-  messageId  String
-  receivedAt DateTime?
-  readAt     DateTime?
-  createdAt  DateTime  @default(now())
+  id          String    @id @default(cuid())
+  userId      String
+  messageId   String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 
   user    User    @relation(fields: [userId], references: [id])
   message Message @relation(fields: [messageId], references: [id])
