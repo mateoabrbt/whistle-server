@@ -20,16 +20,17 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
-  password     String
-  firstName    String?
-  lastName     String?
-  refreshToken String?
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  password          String
+  firstName         String?
+  lastName          String?
+  profilePictureUrl String?
+  refreshToken      String?
+  role              Role     @default(USER)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   rooms           Room[]          @relation("RoomUsers")
   messages        Message[]       @relation("UserSentMessages")

@@ -14,6 +14,7 @@ import { AuthService } from '@auth/auth.service';
 import { RoomService } from '@room/room.service';
 import { WsAuthGuard } from '@auth/ws-auth.guard';
 import { JoinRoomDto } from './dto/body/join.dto';
+import { TypingDto } from './dto/body/typing.dto';
 
 @WebSocketGateway({ namespace: 'room', cors: true })
 @UseGuards(WsAuthGuard)
@@ -99,6 +100,32 @@ export class RoomGateway {
         this.logger.error('Unknown error during connectToRoom', error);
         throw new WsException(
           `An unknown error occurred while connecting to room ${body.roomId}.`,
+        );
+      }
+    }
+  }
+
+  @SubscribeMessage('typing')
+  handleTyping(
+    @MessageBody() body: TypingDto,
+    @ConnectedSocket() client: Socket,
+  ): void {
+    try {
+      const { roomId, isTyping } = body;
+      const { sub } = this.auth.getCurrentSocketUser(client);
+
+      client.to(roomId).emit('userTyping', {
+        isTyping,
+        userId: sub,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        this.logger.error(`Typing error: ${error.message}`, error.stack);
+        throw new WsException(error.message);
+      } else {
+        this.logger.error('Unknown error during handleTyping', error);
+        throw new WsException(
+          'An unknown error occurred while handling typing event.',
         );
       }
     }
